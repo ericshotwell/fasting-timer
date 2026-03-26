@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Intermittent Fasting Timer</title>
+  <meta name="theme-color" content="#0f172a" />
+  <style>
+    :root {
+      --bg1: #020617;
+      --bg2: #0f172a;
+      --bg3: #111827;
+      --panel: rgba(255,255,255,0.08);
+      --panel-2: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.10);
+      --text: #f8fafc;
+      --muted: rgba(248,250,252,0.68);
+      --soft: rgba(248,250,252,0.48);
+      --accent: #ffffff;
+      --accent-dark: #0f172a;
+      --shadow: 0 24px 70px rgba(0,0,0,0.45);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(99,102,241,0.18), transparent 35%),
+        linear-gradient(180deg, var(--bg2), var(--bg3) 45%, var(--bg1));
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    body {
+      padding: 14px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 1240px;
+      height: calc(100vh - 28px);
+      margin: 0 auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .header {
+      padding: 18px 20px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .title {
+      font-size: clamp(1.4rem, 2.1vw, 2.25rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .pill {
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--muted);
+      border-radius: 18px;
+      padding: 12px 14px;
+      font-size: 0.92rem;
+      white-space: nowrap;
+    }
+
+    .content {
+      padding: 10px 20px 20px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.20);
+      border-radius: var(--radius-xl);
+      padding: 18px;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .label {
+      text-transform: uppercase;
+      letter-spacing: 0.20em;
+      color: var(--soft);
+      font-size: 0.72rem;
+      margin-bottom: 6px;
+    }
+
+    .status {
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      font-weight: 700;
+      line-height: 1.05;
+    }
+
+    .end-label {
+      color: var(--muted);
+      font-size: 0.95rem;
+      text-align: right;
+      max-width: 220px;
+    }
+
+    .timer-box {
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .countdown {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1;
+      margin: 8px 0 14px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress {
+      height: 12px;
+      width: 100%;
+      background: rgba(255,255,255,0.10);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.88), rgba(255,255,255,0.55));
+      transition: width 0.35s ease;
+    }
+
+    .progress-text {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .presets {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    .btn, .input, .seg-btn {
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      min-height: 48px;
+      transition: 0.18s ease;
+    }
+
+    .btn {
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 0 14px;
+      cursor: pointer;
+    }
+
+    .btn:hover { background: rgba(255,255,255,0.10); }
+    .btn:active { transform: translateY(1px); }
+
+    .btn.primary {
+      background: var(--accent);
+      color: var(--accent-dark);
+      border-color: rgba(255,255,255,0.9);
+      font-weight: 700;
+    }
+
+    .btn.primary:hover { background: rgba(255,255,255,0.92); }
+
+    .btn.selected {
+      background: var(--accent);
+      color: var(--accent-dark);
+      border-color: rgba(255,255,255,0.9);
+      font-weight: 700;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 10px;
+      margin-top: auto;
+      padding-top: 14px;
+    }
+
+    .section {
+      margin-bottom: 16px;
+    }
+
+    .segmented {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 4px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+
+    .seg-btn {
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .seg-btn.active {
+      background: var(--accent);
+      color: var(--accent-dark);
+      border-color: rgba(255,255,255,0.9);
+      font-weight: 700;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input {
+      width: 100%;
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 0 14px;
+      outline: none;
+    }
+
+    .input:focus {
+      border-color: rgba(255,255,255,0.28);
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.08);
+    }
+
+    .help {
+      color: var(--soft);
+      font-size: 0.90rem;
+      margin-top: 8px;
+      line-height: 1.35;
+    }
+
+    .toggle-row, .summary-box, .tip {
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+    }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .toggle-copy strong, .summary-title {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .toggle-copy span, .summary-box, .tip {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+
+    .switch {
+      position: relative;
+      width: 54px;
+      height: 32px;
+      flex: 0 0 auto;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      transition: 0.2s ease;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      height: 24px;
+      width: 24px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: white;
+      transition: 0.2s ease;
+    }
+
+    .switch input:checked + .slider {
+      background: rgba(255,255,255,0.28);
+    }
+
+    .switch input:checked + .slider::before {
+      transform: translateX(22px);
+    }
+
+    .tip {
+      margin-top: auto;
+      font-size: 0.84rem;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 920px) {
+      body {
+        padding: 10px;
+      }
+      .app {
+        height: calc(100vh - 20px);
+      }
+      .content {
+        grid-template-columns: 1fr;
+      }
+      .panel {
+        padding: 16px;
+      }
+      .header {
+        padding: 16px 16px 8px;
+      }
+      .content {
+        padding: 8px 16px 16px;
+      }
+      .pill {
+        display: none;
+      }
+      .top-row {
+        flex-wrap: wrap;
+      }
+      .end-label {
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 640px) {
+      html, body {
+        overflow: auto;
+      }
+      .app {
+        height: auto;
+        min-height: calc(100vh - 20px);
+      }
+      .countdown {
+        font-size: 2.6rem;
+      }
+      .presets {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div>
+        <div class="title">🌙 Intermittent Fasting Timer</div>
+        <div class="subtitle">One-screen tracker with autosave, countdown, and flexible end options.</div>
+      </div>
+      <div class="pill" id="notifyPill">Alerts off</div>
+    </div>
+
+    <div class="content">
+      <section class="panel">
+        <div>
+          <div class="top-row">
+            <div>
+              <div class="label">Status</div>
+              <div class="status" id="statusText">Ready to start</div>
+            </div>
+            <div>
+              <div class="label" style="text-align:right;">Ends</div>
+              <div class="end-label" id="endLabel">—</div>
+            </div>
+          </div>
+
+          <div class="timer-box">
+            <div class="label" style="text-align:center;">Countdown</div>
+            <div class="countdown" id="countdown">16:00:00</div>
+            <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+            <div class="progress-text" id="progressText">0% complete</div>
+          </div>
+
+          <div class="presets" id="presetButtons"></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" id="mainActionBtn">Start Fast</button>
+          <button class="btn" id="resetBtn">Reset</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section">
+          <div class="label">Set your fast</div>
+          <div class="segmented">
+            <button class="seg-btn active" id="modeDurationBtn">By hours</button>
+            <button class="seg-btn" id="modeEndBtn">By end time</button>
+          </div>
+        </div>
+
+        <div class="section" id="durationSection">
+          <label class="label" for="durationHours" style="letter-spacing:0.08em; font-size:0.78rem;">Fast length (hours)</label>
+          <div class="input-wrap">
+            <input class="input" id="durationHours" type="number" min="1" max="72" step="0.5" />
+          </div>
+          <div class="help">Great for common targets like 12, 14, 16, 18, 20, or 24 hours.</div>
+        </div>
+
+        <div class="section">
+          <label class="label" for="startAtInput" style="letter-spacing:0.08em; font-size:0.78rem;">Fast start date and time</label>
+          <div class="input-wrap">
+            <input class="input" id="startAtInput" type="datetime-local" />
+          </div>
+          <div class="help">Use this when you already started fasting earlier, like yesterday at 9:00 PM.</div>
+        </div>
+
+        <div class="section hidden" id="endSection">
+          <label class="label" for="endAtInput" style="letter-spacing:0.08em; font-size:0.78rem;">Fast end date and time</label>
+          <div class="input-wrap">
+            <input class="input" id="endAtInput" type="datetime-local" />
+          </div>
+          <div class="help">Handy when you know exactly when you want to eat next.</div>
+        </div>
+
+        <div class="section toggle-row">
+          <div class="toggle-copy">
+            <strong>Completion notifications</strong>
+            <span>Optional alert when your fast ends</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="notifyToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="section summary-box">
+          <div class="summary-title">Included features</div>
+          Autosaves every change, supports starting in the past, fast by hours or exact end time, includes a countdown timer, progress bar, pause, resume, reset, and quick presets.
+        </div>
+
+        <div class="tip">
+          Tip for iPhone: once this is hosted on a web URL, open it in Safari and use Share → Add to Home Screen.
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "fasting-timer-single-file-v1";
+    const PRESETS = [12, 14, 16, 18, 20, 24];
+
+    const DEFAULT_STATE = {
+      mode: "duration",
+      durationHours: 16,
+      startAtInput: "",
+      endAtInput: "",
+      startedAt: null,
+      endAt: null,
+      isRunning: false,
+      isPaused: false,
+      pausedRemainingMs: null,
+      notificationsEnabled: false,
+      completedAt: null,
+      lastPreset: 16
+    };
+
+    const els = {
+      statusText: document.getElementById("statusText"),
+      endLabel: document.getElementById("endLabel"),
+      countdown: document.getElementById("countdown"),
+      progressBar: document.getElementById("progressBar"),
+      progressText: document.getElementById("progressText"),
+      presetButtons: document.getElementById("presetButtons"),
+      mainActionBtn: document.getElementById("mainActionBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      modeDurationBtn: document.getElementById("modeDurationBtn"),
+      modeEndBtn: document.getElementById("modeEndBtn"),
+      durationSection: document.getElementById("durationSection"),
+      endSection: document.getElementById("endSection"),
+      durationHours: document.getElementById("durationHours"),
+      startAtInput: document.getElementById("startAtInput"),
+      endAtInput: document.getElementById("endAtInput"),
+      notifyToggle: document.getElementById("notifyToggle"),
+      notifyPill: document.getElementById("notifyPill")
+    };
+
+    let state = loadState();
+    let notifiedComplete = false;
+
+    function pad(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function addHours(date, hours) {
+      return new Date(date.getTime() + hours * 60 * 60 * 1000);
+    }
+
+    function formatDateTimeForInput(date) {
+      const y = date.getFullYear();
+      const m = pad(date.getMonth() + 1);
+      const d = pad(date.getDate());
+      const h = pad(date.getHours());
+      const min = pad(date.getMinutes());
+      return `${y}-${m}-${d}T${h}:${min}`;
+    }
+
+    function formatDuration(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      if (days > 0) return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+      return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    }
+
+    function formatNiceDate(dateStr) {
+      if (!dateStr) return "—";
+      const d = new Date(dateStr);
+      if (Number.isNaN(d.getTime())) return "—";
+      return d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const base = raw ? { ...DEFAULT_STATE, ...JSON.parse(raw) } : { ...DEFAULT_STATE };
+        if (!base.startAtInput) base.startAtInput = formatDateTimeForInput(new Date());
+        if (!base.endAtInput) {
+          const start = new Date(base.startAtInput);
+          const safeStart = Number.isNaN(start.getTime()) ? new Date() : start;
+          base.endAtInput = formatDateTimeForInput(addHours(safeStart, base.durationHours));
+        }
+        return base;
+      } catch {
+        const fallbackStart = new Date();
+        return {
+          ...DEFAULT_STATE,
+          startAtInput: formatDateTimeForInput(fallbackStart),
+          endAtInput: formatDateTimeForInput(addHours(fallbackStart, DEFAULT_STATE.durationHours))
+        };
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function updateState(partial) {
+      state = { ...state, ...partial };
+      saveState();
+      render();
+    }
+
+    function getNow() {
+      return Date.now();
+    }
+
+    function getComputed() {
+      const now = getNow();
+      const startedAtMs = state.startedAt ? new Date(state.startedAt).getTime() : null;
+      const endAtMs = state.endAt ? new Date(state.endAt).getTime() : null;
+
+      let totalDurationMs = 0;
+      if (startedAtMs && endAtMs) totalDurationMs = Math.max(0, endAtMs - startedAtMs);
+      else if (state.mode === "duration") totalDurationMs = Math.max(0, Number(state.durationHours || 0) * 3600000);
+      else if (state.endAtInput) totalDurationMs = Math.max(0, new Date(state.endAtInput).getTime() - now);
+
+      let remainingMs = 0;
+      if (state.isPaused && state.pausedRemainingMs !== null) remainingMs = Math.max(0, state.pausedRemainingMs);
+      else if (state.isRunning && endAtMs) remainingMs = Math.max(0, endAtMs - now);
+      else if (state.mode === "duration") remainingMs = Math.max(0, Number(state.durationHours || 0) * 3600000);
+      else if (state.endAtInput) remainingMs = Math.max(0, new Date(state.endAtInput).getTime() - now);
+
+      let elapsedMs = 0;
+      if (state.isRunning && startedAtMs) elapsedMs = Math.max(0, now - startedAtMs);
+      else if (state.isPaused && totalDurationMs && state.pausedRemainingMs !== null) elapsedMs = Math.max(0, totalDurationMs - state.pausedRemainingMs);
+
+      const progress = totalDurationMs > 0 ? Math.min(100, Math.max(0, elapsedMs / totalDurationMs * 100)) : 0;
+      const isComplete = state.isRunning && remainingMs <= 0;
+      return { now, startedAtMs, endAtMs, totalDurationMs, remainingMs, elapsedMs, progress, isComplete };
+    }
+
+    function handleCompletion() {
+      const computed = getComputed();
+      if (computed.isComplete && !notifiedComplete) {
+        notifiedComplete = true;
+        state.isRunning = false;
+        state.isPaused = false;
+        state.pausedRemainingMs = null;
+        state.completedAt = new Date().toISOString();
+        saveState();
+
+        if (state.notificationsEnabled && "Notification" in window && Notification.permission === "granted") {
+          new Notification("Fast complete", { body: "Your fasting timer has finished." });
+        }
+        render();
+      }
+      if (!computed.isComplete) notifiedComplete = false;
+    }
+
+    function renderPresets() {
+      els.presetButtons.innerHTML = "";
+      PRESETS.forEach((preset) => {
+        const btn = document.createElement("button");
+        btn.className = `btn ${state.lastPreset === preset ? "selected" : ""}`;
+        btn.textContent = `${preset}h`;
+        btn.addEventListener("click", () => {
+          const start = state.startAtInput ? new Date(state.startAtInput) : new Date();
+          const safeStart = Number.isNaN(start.getTime()) ? new Date() : start;
+          const end = addHours(safeStart, preset);
+          updateState({
+            durationHours: preset,
+            lastPreset: preset,
+            mode: "duration",
+            endAtInput: formatDateTimeForInput(end)
+          });
+        });
+        els.presetButtons.appendChild(btn);
+      });
+    }
+
+    function render() {
+      const { remainingMs, progress, isComplete } = getComputed();
+
+      els.durationHours.value = state.durationHours;
+      els.startAtInput.value = state.startAtInput;
+      els.endAtInput.value = state.endAtInput;
+      els.notifyToggle.checked = !!state.notificationsEnabled;
+      els.notifyPill.textContent = state.notificationsEnabled ? "Alerts on" : "Alerts off";
+
+      els.modeDurationBtn.classList.toggle("active", state.mode === "duration");
+      els.modeEndBtn.classList.toggle("active", state.mode === "end");
+      els.durationSection.classList.toggle("hidden", state.mode !== "duration");
+      els.endSection.classList.toggle("hidden", state.mode !== "end");
+
+      let status = "Ready to start";
+      if (isComplete) status = "Fast complete";
+      else if (state.isPaused) status = "Paused";
+      else if (state.isRunning) status = "Fasting now";
+
+      els.statusText.textContent = status;
+      els.countdown.textContent = formatDuration(remainingMs);
+      els.progressBar.style.width = `${Math.round(progress)}%`;
+      els.progressText.textContent = `${Math.round(progress)}% complete`;
+
+      let endText = "—";
+      if (state.isRunning || state.isPaused) endText = formatNiceDate(state.endAt);
+      else if (state.mode === "end") endText = formatNiceDate(state.endAtInput);
+      else {
+        const previewStart = state.startAtInput ? new Date(state.startAtInput) : new Date();
+        const safePreviewStart = Number.isNaN(previewStart.getTime()) ? new Date() : previewStart;
+        endText = formatNiceDate(addHours(safePreviewStart, Number(state.durationHours || 0)).toISOString());
+      }
+      els.endLabel.textContent = endText;
+
+      if (!state.isRunning && !state.isPaused) {
+        els.mainActionBtn.textContent = "Start Fast";
+        els.mainActionBtn.onclick = startFast;
+      } else if (state.isRunning) {
+        els.mainActionBtn.textContent = "Pause";
+        els.mainActionBtn.onclick = pauseFast;
+      } else {
+        els.mainActionBtn.textContent = "Resume";
+        els.mainActionBtn.onclick = resumeFast;
+      }
+
+      renderPresets();
+    }
+
+    function startFast() {
+      const now = new Date();
+      const chosenStart = state.startAtInput ? new Date(state.startAtInput) : now;
+      const start = Number.isNaN(chosenStart.getTime()) ? now : chosenStart;
+      let end;
+      if (state.mode === "duration") {
+        end = addHours(start, Number(state.durationHours || 0));
+      } else {
+        end = new Date(state.endAtInput);
+        if (Number.isNaN(end.getTime()) || end.getTime() <= start.getTime()) {
+          end = addHours(start, Number(state.durationHours || 16));
+        }
+      }
+      updateState({
+        startAtInput: formatDateTimeForInput(start),
+        startedAt: start.toISOString(),
+        endAt: end.toISOString(),
+        endAtInput: formatDateTimeForInput(end),
+        isRunning: true,
+        isPaused: false,
+        pausedRemainingMs: null,
+        completedAt: null
+      });
+    }
+
+    function pauseFast() {
+      const endAtMs = state.endAt ? new Date(state.endAt).getTime() : null;
+      if (!state.isRunning || !endAtMs) return;
+      updateState({
+        isPaused: true,
+        isRunning: false,
+        pausedRemainingMs: Math.max(0, endAtMs - Date.now())
+      });
+    }
+
+    function resumeFast() {
+      const remaining = state.pausedRemainingMs ?? Number(state.durationHours || 16) * 3600000;
+      const now = new Date();
+      const total = state.startedAt && state.endAt ? Math.max(0, new Date(state.endAt).getTime() - new Date(state.startedAt).getTime()) : Number(state.durationHours || 16) * 3600000;
+      const end = new Date(now.getTime() + remaining);
+      const reconstructedStart = new Date(now.getTime() - Math.max(0, total - remaining));
+      updateState({
+        startedAt: reconstructedStart.toISOString(),
+        endAt: end.toISOString(),
+        isRunning: true,
+        isPaused: false,
+        pausedRemainingMs: null
+      });
+    }
+
+    function resetFast() {
+      const start = new Date();
+      const end = addHours(start, Number(state.lastPreset || 16));
+      updateState({
+        mode: "duration",
+        durationHours: state.lastPreset || 16,
+        startAtInput: formatDateTimeForInput(start),
+        startedAt: null,
+        endAt: null,
+        isRunning: false,
+        isPaused: false,
+        pausedRemainingMs: null,
+        completedAt: null,
+        endAtInput: formatDateTimeForInput(end)
+      });
+    }
+
+    function requestNotifications(checked) {
+      if (!checked) {
+        updateState({ notificationsEnabled: false });
+        return;
+      }
+      if (!("Notification" in window)) {
+        alert("This browser does not support notifications.");
+        els.notifyToggle.checked = false;
+        return;
+      }
+      Notification.requestPermission().then((permission) => {
+        updateState({ notificationsEnabled: permission === "granted" });
+      });
+    }
+
+    els.modeDurationBtn.addEventListener("click", () => updateState({ mode: "duration" }));
+    els.modeEndBtn.addEventListener("click", () => updateState({ mode: "end" }));
+    els.durationHours.addEventListener("input", (e) => {
+      const durationHours = Number(e.target.value) || 0;
+      const start = state.startAtInput ? new Date(state.startAtInput) : new Date();
+      const safeStart = Number.isNaN(start.getTime()) ? new Date() : start;
+      updateState({
+        durationHours,
+        endAtInput: state.mode === "duration" ? formatDateTimeForInput(addHours(safeStart, durationHours)) : state.endAtInput
+      });
+    });
+    els.startAtInput.addEventListener("input", (e) => {
+      const startAtInput = e.target.value;
+      const start = startAtInput ? new Date(startAtInput) : new Date();
+      const safeStart = Number.isNaN(start.getTime()) ? new Date() : start;
+      updateState({
+        startAtInput,
+        endAtInput: state.mode === "duration" ? formatDateTimeForInput(addHours(safeStart, Number(state.durationHours || 0))) : state.endAtInput
+      });
+    });
+    els.endAtInput.addEventListener("input", (e) => updateState({ endAtInput: e.target.value }));
+    els.notifyToggle.addEventListener("change", (e) => requestNotifications(e.target.checked));
+    els.resetBtn.addEventListener("click", resetFast);
+
+    render();
+    setInterval(() => {
+      handleCompletion();
+      render();
+    }, 1000);
+  </script>
+</body>
+</html>
